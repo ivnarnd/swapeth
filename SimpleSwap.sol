@@ -209,6 +209,22 @@ function swapExactTokensForTokens(
     amounts[0] = amountIn;
     amounts[1] = amountOut;
 }
+function getPrice(address tokenA, address tokenB) external view returns (uint price) {
+    // Obtenemos la clave del pool según el par de tokens
+    bytes32 key = getPoolKey(tokenA, tokenB);
+    Pool storage pool = pools[key];
 
+    // Obtenemos las reservas en el orden correcto
+    (uint reserveA, uint reserveB) = tokenA < tokenB
+        ? (pool.reserveA, pool.reserveB)
+        : (pool.reserveB, pool.reserveA);
 
+    // Si no hay liquidez, el precio es cero
+    if (reserveA == 0 || reserveB == 0) {
+        return 0;
+    }
+
+    // Calculamos el precio: cuántos tokenB vale 1 tokenA
+    price = (reserveB * 1e18) / reserveA;
+}
 }
