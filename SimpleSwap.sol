@@ -227,4 +227,18 @@ function getPrice(address tokenA, address tokenB) external view returns (uint pr
     // Calculamos el precio: cuántos tokenB vale 1 tokenA
     price = (reserveB * 1e18) / reserveA;
 }
+function getAmountOut(
+    uint amountIn,
+    uint reserveIn,
+    uint reserveOut
+) external pure returns (uint amountOut) {
+    require(amountIn > 0, "amountIn must be > 0");
+    require(reserveIn > 0 && reserveOut > 0, "Invalid reserves");
+
+    uint amountInWithFee = amountIn * 997; // Fee 0.3% para beneficiar a las cuentas que aportan liquidez
+    uint numerator = amountInWithFee * reserveOut;
+    uint denominator = (reserveIn * 1000) + amountInWithFee;
+    amountOut = numerator / denominator;
+}
+
 }
