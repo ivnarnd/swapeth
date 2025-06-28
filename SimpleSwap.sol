@@ -79,9 +79,8 @@ contract SimpleSwap {
         }
 
         // Transferir los tokens desde el usuario al contrato
-        IERC20(tokenA).transferFrom(msg.sender, address(this), amountA);
-        IERC20(tokenB).transferFrom(msg.sender, address(this), amountB);
-
+        require(IERC20(tokenA).transferFrom(msg.sender, address(this), amountA), "Transfer tokenA failed");
+        require(IERC20(tokenB).transferFrom(msg.sender, address(this), amountB), "Transfer tokenB failed");
         // Calcular cuánta liquidez le corresponde al usuario
         if (pool.totalLiquidity == 0) {
             liquidity = sqrt(amountA * amountB); // Primer proveedor
@@ -154,6 +153,7 @@ contract SimpleSwap {
     require(IERC20(tokenA).transfer(to, amountA), "Transfer of tokenA failed");
     require(IERC20(tokenB).transfer(to, amountB), "Transfer of tokenB failed");
 }
+
 function swapExactTokensForTokens(
     uint amountIn,
     uint amountOutMin,
@@ -209,6 +209,7 @@ function swapExactTokensForTokens(
     amounts[0] = amountIn;
     amounts[1] = amountOut;
 }
+
 function getPrice(address tokenA, address tokenB) external view returns (uint price) {
     // Obtenemos la clave del pool según el par de tokens
     bytes32 key = getPoolKey(tokenA, tokenB);
@@ -227,6 +228,7 @@ function getPrice(address tokenA, address tokenB) external view returns (uint pr
     // Calculamos el precio: cuántos tokenB vale 1 tokenA
     price = (reserveB * 1e18) / reserveA;
 }
+
 function getAmountOut(
     uint amountIn,
     uint reserveIn,
