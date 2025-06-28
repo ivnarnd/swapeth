@@ -107,4 +107,52 @@ contract SimpleSwap {
             pool.reserveB += amountA;
         }
     }
+    //Remover la liquidez
+    function removeLiquidity(
+    address tokenA,
+    address tokenB,
+    uint liquidity,
+    uint amountAMin,
+    uint amountBMin,
+    address to,
+    uint deadline
+) external returns (uint amountA, uint amountB) {
+    require(block.timestamp <= deadline, "Transaction expired");
+
+    bytes32 key = getPoolKey(tokenA, tokenB);
+    Pool storage pool = pools[key];
+
+    uint userLiquidity = pool.liquidity[msg.sender];
+    require(userLiquidity >= liquidity, "Not enough liquidity");
+
+    // Obtener reservas actuales respetando el orden
+    (uint reserveA, uint reserveB) = tokenA < tokenB 
+        ? (pool.reserveA, pool.reserveB) 
+        : (pool.reserveB, pool.reserveA);
+
+    // Calcular cantidad a retirar proporcional a la liquidez quemada
+    amountA = (liquidity * reserveA) / pool.totalLiquidity;
+    amountB = (liquidity * reserveB) / pool.totalLiquidity;
+
+    require(amountA >= amountAMin, "Amount A less than minimum");
+    require(amountB >= amountBMin, "Amount B less than minimum");
+
+    // Actualizar la liquidez del usuario y total del pool
+    pool.liquidity[msg.sender] -= liquidity;
+    pool.totalLiquidity -= liquidity;
+
+    // Actualizar reservas según orden de tokens
+    if (tokenA < tokenB) {
+        pool.reserveA -= amountA;
+        pool.reserveB -= amountB;
+    } else {
+        pool.reserveA -= amountB;
+        pool.reserveB -= amountA;
+    }
+
+    // Transferir tokens al destinatario
+    require(IERC20(tokenA).transfer(to, amountA), "Transfer of tokenA failed");
+    require(IERC20(tokenB).transfer(to, amountB), "Transfer of tokenB failed");
+}
+
 }
