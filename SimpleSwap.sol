@@ -154,5 +154,61 @@ contract SimpleSwap {
     require(IERC20(tokenA).transfer(to, amountA), "Transfer of tokenA failed");
     require(IERC20(tokenB).transfer(to, amountB), "Transfer of tokenB failed");
 }
+function swapExactTokensForTokens(
+    uint amountIn,
+    uint amountOutMin,
+    address[] calldata path,
+    address to,
+    uint deadline
+) external returns (uint[] memory amounts) {
+    // Solo permitimos swaps entre dos tokens (por ahora)
+    require(path.length == 2, "Only 2-token swap allowed");
+
+    // Rechazamos la transacción si ya expiró
+    require(block.timestamp <= deadline, "Swap expired");
+
+    address tokenIn = path[0];
+    address tokenOut = path[1];
+    bytes32 key = getPoolKey(tokenIn, tokenOut);
+    Pool storage pool = pools[key];
+
+    // Obtenemos las reservas actuales del pool (en orden)
+    (uint reserveIn, uint reserveOut) = tokenIn < tokenOut
+        ? (pool.reserveA, pool.reserveB)
+        : (pool.reserveB, pool.reserveA);
+
+    // Nos aseguramos de que haya liquidez en el par
+    require(reserveIn > 0 && reserveOut > 0, "No liquidity in pool");
+
+    // Transferimos los tokens de entrada desde el usuario al contrato
+    require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn), "TokenIn transfer failed");
+
+    // Calculamos el monto a entregar con la fórmula de Uniswap (con 0.3% de fee)
+    uint amountInWithFee = amountIn * 997;
+    uint numerator = amountInWithFee * reserveOut;
+    uint denominator = (reserveIn * 1000) + amountInWithFee;
+    uint amountOut = numerator / denominator;
+
+    // Validamos que el usuario reciba al menos lo mínimo esperado
+    require(amountOut >= amountOutMin, "Output too low");
+
+    // Actualizamos las reservas del pool según el orden de los tokens
+    if (tokenIn < tokenOut) {
+        pool.reserveA += amountIn;
+        pool.reserveB -= amountOut;
+    } else {
+        pool.reserveA -= amountOut;
+        pool.reserveB += amountIn;
+    }
+
+    // Transferimos los tokens de salida al destinatario
+    require(IERC20(tokenOut).transfer(to, amountOut), "TokenOut transfer failed");
+
+    // Devolvemos las cantidades involucradas en el swap
+    amounts = new uint256[](2);
+    amounts[0] = amountIn;
+    amounts[1] = amountOut;
+}
+
 
 }
