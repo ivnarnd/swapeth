@@ -1,23 +1,38 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { ethers } from "ethers";
 
 function App() {
+  const [address, setAddress] = useState(null);
+
+  // Función para conectar MetaMask
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        setAddress(accounts[0]);
+      } catch (error) {
+        console.error("Usuario rechazó la conexión");
+      }
+    } else {
+      alert("Por favor instala MetaMask");
+    }
+  }
+
+  // Función para desconectar (simplemente limpiar estado)
+  function disconnect() {
+    setAddress(null);
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ padding: "20px" }}>
+      {address ? (
+        <>
+          <p>Conectado como: {address}</p>
+          <button onClick={disconnect}>Desconectar</button>
+        </>
+      ) : (
+        <button onClick={connectWallet}>Conectar MetaMask</button>
+      )}
     </div>
   );
 }
